@@ -1,0 +1,133 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum IncomeType {
+  AVANS
+  ORDER_FINISH
+  SALE
+  DEBT
+  OTHER
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  USER
+}
+
+model ProductType {
+  id        Int       @id @default(autoincrement())
+  createdAt DateTime  @default(now())
+  name      String    @unique
+  product   Product[]
+}
+
+model Product {
+  id            Int         @id @default(autoincrement())
+  createdAt     DateTime    @default(now())
+  name          String
+  productTypeId Int
+  productType   ProductType @relation(fields: [productTypeId], references: [id])
+  order         Order[]
+  sale          Sale[]
+  debt          Debt[]
+}
+
+model Order {
+  id            Int      @id @default(autoincrement())
+  createdAt     DateTime @default(now())
+  note          String
+  price         Int
+  avans         Int
+  customer      String
+  phone         String
+  dateOfReceipt DateTime
+  done          Boolean  @default(false)
+  productId     Int
+  product       Product  @relation(fields: [productId], references: [id])
+  Income        Income[]
+}
+
+model Sale {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  note      String
+  price     Int
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id])
+  income    Income?
+}
+
+model Income {
+  id        Int        @id @default(autoincrement())
+  createdAt DateTime   @default(now())
+  type      IncomeType @default(OTHER)
+  note      String
+  price     Int
+  orderId   Int?
+  order     Order?     @relation(fields: [orderId], references: [id])
+  saleId    Int?       @unique
+  sale      Sale?      @relation(fields: [saleId], references: [id])
+  debtId    Int?
+  debt      Debt?      @relation(fields: [debtId], references: [id])
+}
+
+model SpendType {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  name      String   @unique
+  spend     Spend[]
+}
+
+model Spend {
+  id          Int       @id @default(autoincrement())
+  createdAt   DateTime  @default(now())
+  note        String
+  price       Int
+  spendTypeId Int
+  spendType   SpendType @relation(fields: [spendTypeId], references: [id])
+}
+
+model Debt {
+  id           Int      @id @default(autoincrement())
+  createdAt    DateTime @default(now())
+  note         String
+  debtor       String
+  phone        String
+  productPrice Int
+  debtSum      Int
+  returned     Boolean  @default(false)
+  returnDate   DateTime
+  productId    Int
+  product      Product  @relation(fields: [productId], references: [id])
+  Income       Income[]
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  password      String
+  refreshTokens RefreshToken[]
+  role          Role           @default(USER)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model RefreshToken {
+  id          String   @id @default(uuid())
+  hashedToken String
+  userId      String
+  User        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  revoked     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
